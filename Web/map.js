@@ -7,6 +7,7 @@ playerData.map = 0;
 playerData.pos = new Array();
 playerData.pRot = 0;
 playerData.cRot = 0;
+var playersData = new Object();
 
 var hasBeenLinked = false;
 var mapInitialized = false;
@@ -33,7 +34,7 @@ var optGW2LinkIP = "127.0.0.1";
 //var gw2LinkIP = "24.22.243.30";
 
 var map = null;
-var playerMarker = null;
+var playerMarker = new Object();
 
 var playerIcon = L.Icon.extend({
     options: {
@@ -179,17 +180,19 @@ function waitForMapData() {
 
 // Start checking for GW2Link every .25 seconds, once the page has finished loading
 $( document ).ready(function() {
+    $.getScript("plugins/" + plugin + ".js");
     initServerNames();
     initMap();
     //waitForMapData();
     updateGW2Link();
-    setInterval(updateGW2Link, 250);
+    setInterval(updateGW2Link, update_interval);
+    registerUpdatePlayers();
     setInterval(checkOptions, 500);
 });
 
 
 // Get an array of the player's x/y position
-function getPlayerPos() {
+function getPlayerPos(playerName) {
     if(map == null || mapData[currentMap] == null)
         return;
     
@@ -201,8 +204,8 @@ function getPlayerPos() {
         return;
     }
 
-    mapPct[0] = ((playerData.pos[0] * gameToMapRatio) - mapData[currentMap].mLeft) / mapData[currentMap].mWidth;
-    mapPct[1] = ((playerData.pos[2] * gameToMapRatio) - mapData[currentMap].mTop) / mapData[currentMap].mHeight;
+    mapPct[0] = ((playersData[playerName].pos[0] * gameToMapRatio) - mapData[currentMap].mLeft) / mapData[currentMap].mWidth;
+    mapPct[1] = ((playersData[playerName].pos[2] * gameToMapRatio) - mapData[currentMap].mTop) / mapData[currentMap].mHeight;
 
     playerPos[0] = mapData[currentMap].cLeft + (mapData[currentMap].cWidth * mapPct[0])
     playerPos[1] = (mapData[currentMap].cTop + mapData[currentMap].cHeight) - (mapData[currentMap].cHeight * mapPct[1])
@@ -231,21 +234,21 @@ function onMapClick(e) {
     console.log("You clicked the map at " + map.project(e.latlng));
 }
 
-// Update the player marker's location and rotation
-function updatePlayer() {
+// Update the players marker's location and rotation
+function updatePlayer(playerName) {
     if(map == null || !mapData[currentMap])
         return;
 
-    playerPos = getPlayerPos()
+    playerPos = getPlayerPos(playerName)
 
-    if(playerMarker == null) {
-        playerMarker = L.marker(unproject([playerPos[0], playerPos[1]]), { icon: new playerIcon(), title: playerData.pName });
-        playerMarker.addTo(map);
+    if(typeof(playerMarker[playerName]) == "undefined") {
+        playerMarker[playerName] = L.marker(unproject([playerPos[0], playerPos[1]]), { icon: new playerIcon(), title: playerName });
+        playerMarker[playerName].addTo(map);
     }
-    playerMarker.setLatLng(unproject([playerPos[0], playerPos[1]]));
-    playerMarker._icon.style[L.DomUtil.TRANSFORM] += ' rotate(-' + playerData.cRot + 'deg)';
+    playerMarker[playerName].setLatLng(unproject([playerPos[0], playerPos[1]]));
+    playerMarker[playerName]._icon.style[L.DomUtil.TRANSFORM] += ' rotate(-' + playersData[playerName].cRot + 'deg)';
 
-    if(optCenterMap)
+    if(optCenterMap && (playerName == playerData.pName))
         map.panTo(unproject([playerPos[0], playerPos[1]]));
 }
 
@@ -437,8 +440,9 @@ function updateGW2Link() {
         }
 
         // Update!
+        playersData[playerData.pName] = playerData;
         updateLinkStatus(true);
-        updatePlayer();
+        updateLocalPlayer();
     });
 
     // if the JSON request fails 3 times in a row, consider GW2Link disconnected
