@@ -1,4 +1,5 @@
 var mapData = new Array();
+var serverNames = new Object();
 var playerData = new Object();
 playerData.pName = "NoName";
 playerData.server = 0;
@@ -81,6 +82,14 @@ var taskIcon = L.Icon.extend({
         iconAnchor:   [16, 16]
     }
 });
+
+function initServerNames() {
+    $.getJSON("https://api.guildwars2.com/v1/world_names.json", function(data) {
+        $.each(data, function(i, world) {
+            serverNames[world.id] = world.name;
+        });
+    });
+}
 
 // Create the leaflet map
 function initMap() {
@@ -170,6 +179,7 @@ function waitForMapData() {
 
 // Start checking for GW2Link every .25 seconds, once the page has finished loading
 $( document ).ready(function() {
+    initServerNames();
     initMap();
     //waitForMapData();
     updateGW2Link();
@@ -392,8 +402,8 @@ function updateGW2Link() {
         document.getElementById("status").innerHTML=data.status;
         document.getElementById("game").innerHTML=data.game;  
         document.getElementById("name").innerHTML=data.name; 
-        document.getElementById("server").innerHTML=data.server; 
-        document.getElementById("map").innerHTML=data.map; 
+        document.getElementById("server").innerHTML=serverNames[data.server];
+        document.getElementById("map").innerHTML=mapData[data.map].mData.name;
 
         document.getElementById("posx").innerHTML=data.pos[0]; 
         document.getElementById("posy").innerHTML=data.pos[1]; 
