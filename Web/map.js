@@ -7,7 +7,9 @@ playerData.map = 0;
 playerData.pos = new Array();
 playerData.pRot = 0;
 playerData.cRot = 0;
+playerData.lastSeen = Date.now();
 var playersData = new Object();
+var playerMarkers = new Object();
 
 var hasBeenLinked = false;
 var mapInitialized = false;
@@ -27,6 +29,7 @@ var optShowPOI = true;
 var optShowVista = true;
 var optShowSkill = true;
 var optShowTask = true;
+var optShowNames = true;
 var optBroadcast = false;
 var optBroadcastGroup = "None";
 var optGW2LinkIP = "127.0.0.1";
@@ -34,7 +37,6 @@ var optGW2LinkIP = "127.0.0.1";
 //var gw2LinkIP = "24.22.243.30";
 
 var map = null;
-var playerMarker = new Object();
 
 var playerIcon = L.Icon.extend({
     options: {
@@ -180,35 +182,40 @@ function waitForMapData() {
 
 // Start checking for GW2Link every .25 seconds, once the page has finished loading
 $( document ).ready(function() {
-    $.getScript("plugins/" + plugin + ".js");
-    initServerNames();
-    initMap();
-    //waitForMapData();
-    updateGW2Link();
-    setInterval(updateGW2Link, update_interval);
-    registerUpdatePlayers();
-    setInterval(checkOptions, 500);
+    $.getScript("config.js", function() {
+        $.getScript("plugins/" + plugin + ".js", function() {
+            initServerNames();
+            initMap();
+            //waitForMapData();
+            updateGW2Link();
+            setInterval(updateGW2Link, update_interval);
+            registerUpdatePlayers();
+            setInterval(checkOptions, 500);
+            setInterval(updatePlayersList, 5000);
+        })
+    })
 });
 
 
 // Get an array of the player's x/y position
 function getPlayerPos(playerName) {
-    if(map == null || mapData[currentMap] == null)
+    var playerMap = playersData[playerName].map;
+    if(map == null || mapData[playerMap] == null)
         return;
     
     playerPos = new Array();
     mapPct = new Array();
 
-    if(mapData[currentMap].mWidth == 0 || mapData[currentMap].mHeight == 0 || mapData[currentMap].cWidth == 0 || mapData[currentMap].cHeight == 0) {
-        console.log("Bad map data: " + currentMap.toString());
+    if(mapData[playerMap].mWidth == 0 || mapData[playerMap].mHeight == 0 || mapData[playerMap].cWidth == 0 || mapData[playerMap].cHeight == 0) {
+        console.log("Bad map data: " + playerMap.toString());
         return;
     }
 
-    mapPct[0] = ((playersData[playerName].pos[0] * gameToMapRatio) - mapData[currentMap].mLeft) / mapData[currentMap].mWidth;
-    mapPct[1] = ((playersData[playerName].pos[2] * gameToMapRatio) - mapData[currentMap].mTop) / mapData[currentMap].mHeight;
+    mapPct[0] = ((playersData[playerName].pos[0] * gameToMapRatio) - mapData[playerMap].mLeft) / mapData[playerMap].mWidth;
+    mapPct[1] = ((playersData[playerName].pos[2] * gameToMapRatio) - mapData[playerMap].mTop) / mapData[playerMap].mHeight;
 
-    playerPos[0] = mapData[currentMap].cLeft + (mapData[currentMap].cWidth * mapPct[0])
-    playerPos[1] = (mapData[currentMap].cTop + mapData[currentMap].cHeight) - (mapData[currentMap].cHeight * mapPct[1])
+    playerPos[0] = mapData[playerMap].cLeft + (mapData[playerMap].cWidth * mapPct[0])
+    playerPos[1] = (mapData[playerMap].cTop + mapData[playerMap].cHeight) - (mapData[playerMap].cHeight * mapPct[1])
 
     return playerPos;
 }
@@ -236,17 +243,24 @@ function onMapClick(e) {
 
 // Update the players marker's location and rotation
 function updatePlayer(playerName) {
-    if(map == null || !mapData[currentMap])
+    var playerMap = playersData[playerName].map;
+    if(map == null || !mapData[playerMap])
         return;
 
     playerPos = getPlayerPos(playerName)
 
-    if(typeof(playerMarker[playerName]) == "undefined") {
-        playerMarker[playerName] = L.marker(unproject([playerPos[0], playerPos[1]]), { icon: new playerIcon(), title: playerName });
-        playerMarker[playerName].addTo(map);
+    if(typeof(playerMarkers[playerName]) == "undefined" ) {
+        playerMarkers[playerName] = L.marker(unproject([playerPos[0], playerPos[1]]), { icon: new playerIcon(), title: playerName });
+        playerMarkers[playerName].bindPopup(playerName);
+        playerMarkers[playerName].addTo(map);
+        if (optShowNames) {
+            playerMarkers[playerName].openPopup();
+        } else {
+            playerMarkers[playerName].closePopup();
+        }
     }
-    playerMarker[playerName].setLatLng(unproject([playerPos[0], playerPos[1]]));
-    playerMarker[playerName]._icon.style[L.DomUtil.TRANSFORM] += ' rotate(-' + playersData[playerName].cRot + 'deg)';
+    playerMarkers[playerName].setLatLng(unproject([playerPos[0], playerPos[1]]));
+    playerMarkers[playerName]._icon.style[L.DomUtil.TRANSFORM] += ' rotate(-' + playersData[playerName].cRot + 'deg)';
 
     if(optCenterMap && (playerName == playerData.pName))
         map.panTo(unproject([playerPos[0], playerPos[1]]));
@@ -440,9 +454,12 @@ function updateGW2Link() {
         }
 
         // Update!
-        playersData[playerData.pName] = playerData;
+        if (data.status.substring(0, 6) == "Linked") {
+            playerData.lastSeen = Date.now();
+            playersData[playerData.pName] = playerData;
+            updateLocalPlayer();
+        }
         updateLinkStatus(true);
-        updateLocalPlayer();
     });
 
     // if the JSON request fails 3 times in a row, consider GW2Link disconnected
@@ -521,8 +538,45 @@ $('#checkbox-showtask').change(function() {
         removeMarkers(currentMap, "task")
 });
 
+$('#checkbox-shownames').change(function() {
+    optShowNames = $('#checkbox-shownames').prop('checked');
+    for (var playerName in playerMarkers) {
+        if (optShowNames) {
+            playerMarkers[playerName].openPopup();
+        } else {
+            playerMarkers[playerName].closePopup();
+        }
+    }
+});
+
 $('#form-gw2linkip').change(function() {
         checkOptions();
 });
 
+function updatePlayersList() {
+    var now = Date.now();
+    for (var playerName in playersData) {
+        // Check for local character switch
+        if ((playersData[playerName] == playerData) && (playerName != playerData.pName)) {
+            removePlayer(playerName);
+            return;
+        }
+        // Check for disconnected players
+        var age = (now - playersData[playerName].lastSeen)/1000;
+        if (age > 60) {
+            removePlayer(playerName);
+            return;
+        } else if (age > 10) {
+            playerMarkers[playerName].setOpacity((60-age)/60);
+        } else {
+            playerMarkers[playerName].setOpacity(1);
+        }
+    }
+}
+
+function removePlayer(playerName) {
+    map.removeLayer(playerMarkers[playerName]);
+    delete playerMarkers[playerName];
+    delete playersData[playerName];
+}
 

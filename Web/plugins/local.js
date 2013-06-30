@@ -1,4 +1,6 @@
 
+console.log("Initializing local plugin");
+
 function updateLocalPlayer() {
     updatePlayer(playerData.pName);
 }
