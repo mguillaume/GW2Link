@@ -37,22 +37,24 @@ a:hover {
 }
 
 #top-bar {
-    padding:12px;
+    display: block;
+    padding: 15px;
     position:fixed;
-    top:0px;
-    left:0px;
-    right: 0px;
-    height: 48px;
+    top:14px;
+    left:50px;
     background-color:#202020;
     font-family:Arial;
-    font-weight:bold;
     color:#ccc4bc;
+    font-size: 16px;
+    font-weight: bold;
+
+    z-index: 10;
 }
 
 #content-container {
     position:fixed;
-    top:48px;
-    bottom:48px;
+    top:0px;
+    bottom:0px;
     left:0px;
     right:0px;
     background-color:#a0a0a0;
@@ -63,7 +65,7 @@ a:hover {
     position:relative;
     top:0px;
     left:0px;
-    width:75%;
+    width:100%;
     height:100%;
     background-color:#181818;
     background-repeat:no-repeat;
@@ -72,12 +74,9 @@ a:hover {
 
 #right-bar {
     padding:0px;
-    float:left;
-    position:relative;
-    top:0px;
-    right:0px;
-    width:25%;
-    height:100%;
+    position:absolute;
+    top:15px;
+    right:15px;
     background-color:#181818;
     font-family:Arial;
     color:#ccc4bc;
@@ -130,13 +129,24 @@ a:hover {
     position:relative;
     left:0px;
     right:0px;
-    height:180px;
     padding:4px;
     background-color:#302020;
+
+    padding-top: 0;
 }
 
-#options-collapse {
-    font-size:65%;
+#options-interior {
+    padding-top: 1.2em;
+}
+
+#options-link {
+    float:right;
+    font-size:0.6em;
+    margin-bottom:0.4em;
+    margin-top:0.4em;
+
+    text-decoration: none;
+    font-style: italic;
 }
 
 #raw-panel {
