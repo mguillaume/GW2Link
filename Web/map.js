@@ -38,6 +38,8 @@ var optGW2LinkIP = "127.0.0.1";
 
 var map = null;
 
+var bountiesPaths;
+
 var playerIcon = L.Icon.extend({
     options: {
         iconUrl: 'images/marker-icon.png',
@@ -164,6 +166,41 @@ function initMap() {
         mapInitialized = true;
         console.log("Map initialized");
     });
+
+    //Guild bounty paths
+    var possibleSpawn = L.icon({
+            iconUrl: "images/possiblespawn.png"
+    }); 
+    var possibleSpawnTitle = "Spawn possible du boss"
+
+    bountiesPaths = new L.layerGroup();
+
+    $.getJSON('bounties.json').done(function(data) {
+        var i;
+        for(i = 0; i < data.points.length; i++) {
+            L.marker([data.points[i][0], data.points[i][1]], {
+                title: possibleSpawnTitle,
+                icon: possibleSpawn
+            }).addTo(bountiesPaths);
+        }
+
+        for(i = 0; i < data.paths.length; i++) {
+            var pathCoordinates = new Array();
+            var j;
+            for(j = 0; j < data.paths[i].points.length; j++) {
+                pathCoordinates.push(new L.LatLng(data.paths[i].points[j][0],data.paths[i].points[j][1]));
+            }
+            var path = new L.polyline(pathCoordinates, {color: data.paths[i].color, weight: 3});
+            
+            var pattern = [
+                 {offset: '3%', repeat: 150, symbol: new L.Symbol.ArrowHead({pixelSize: 10, polygon: false, pathOptions: {color: data.paths[i].color, weight: 2}})}
+            ];
+
+            var direction = new L.polylineDecorator(path, {patterns: pattern});
+            bountiesPaths.addLayer(path);
+            bountiesPaths.addLayer(direction);
+        }
+    });
 }
 
 function waitForMapData() {
@@ -182,6 +219,13 @@ function waitForMapData() {
 
 // Start checking for GW2Link every .25 seconds, once the page has finished loading
 $( document ).ready(function() {
+    $("input#checkbox-showbounties").change(function() {
+        if($(this).is(':checked'))
+            addGuildBounties();
+        else
+            removeGuildBounties();
+    });
+
     $.getScript("config.js", function() {
         $.getScript("plugins/" + plugin + ".js", function() {
             initServerNames();
@@ -481,15 +525,13 @@ function checkOptions() {
 
 $("#options-link").click(function() {
     if(optionsOpen) {
-        $("#options-panel").css('height', '16px');
-        $("#options-interior").css('visibility', 'hidden')
-        $("#options-collapse").html(' (expand)');
+        $("#right-bar").css('display', 'inline');
+        $("#options-interior").hide();
         optionsOpen = false;
     }
     else {
-        $("#options-panel").css('height', '160px');
-        $("#options-interior").css('visibility', 'visible')
-        $("#options-collapse").html(' (collapse)');
+        $("#right-bar").css('display', 'block');
+        $("#options-interior").show();
         optionsOpen = true;
     }
 });
@@ -580,3 +622,10 @@ function removePlayer(playerName) {
     delete playersData[playerName];
 }
 
+function addGuildBounties() {
+    map.addLayer(bountiesPaths);
+}
+
+function removeGuildBounties() {
+    map.removeLayer(bountiesPaths);
+}
