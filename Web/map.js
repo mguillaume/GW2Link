@@ -36,6 +36,8 @@ var optGW2LinkIP = "127.0.0.1";
 //var gw2LinkIP = "192.168.1.115";
 //var gw2LinkIP = "24.22.243.30";
 
+var groupName = "all";
+
 var map = null;
 
 var bountiesPaths;
@@ -219,13 +221,6 @@ function waitForMapData() {
 
 // Start checking for GW2Link every .25 seconds, once the page has finished loading
 $( document ).ready(function() {
-    $("input#checkbox-showbounties").change(function() {
-        if($(this).is(':checked'))
-            addGuildBounties();
-        else
-            removeGuildBounties();
-    });
-
     $.getScript("config.js", function() {
         $.getScript("plugins/" + plugin + ".js", function() {
             initServerNames();
@@ -459,20 +454,6 @@ function updateGW2Link() {
         jsonSuccess = true;
         jsonFails = 0;
 
-        // Update the raw data display
-        document.getElementById("status").innerHTML=data.status;
-        document.getElementById("game").innerHTML=data.game;  
-        document.getElementById("name").innerHTML=data.name; 
-        document.getElementById("server").innerHTML=serverNames[data.server];
-        document.getElementById("map").innerHTML=mapData[data.map].mData.name;
-
-        document.getElementById("posx").innerHTML=data.pos[0]; 
-        document.getElementById("posy").innerHTML=data.pos[1]; 
-        document.getElementById("posz").innerHTML=data.pos[2]; 
-
-        document.getElementById("prot").innerHTML=data.prot; 
-        document.getElementById("crot").innerHTML=data.crot; 
-
         // Update the player data
         playerData.pName = data.name;
         playerData.server = data.server;
@@ -525,12 +506,10 @@ function checkOptions() {
 
 $("#options-link").click(function() {
     if(optionsOpen) {
-        $("#right-bar").css('display', 'inline');
         $("#options-interior").hide();
         optionsOpen = false;
     }
     else {
-        $("#right-bar").css('display', 'block');
         $("#options-interior").show();
         optionsOpen = true;
     }
@@ -593,6 +572,30 @@ $('#checkbox-shownames').change(function() {
 
 $('#form-gw2linkip').change(function() {
         checkOptions();
+});
+
+$("input#checkbox-showbounties").change(function() {
+    if($(this).is(':checked'))
+        addGuildBounties();
+    else
+        removeGuildBounties();
+});
+
+$("button#send-groupName").click(function() {
+    var groupTag = $("input#form-groupName").val();
+    if(groupTag != "") {
+        groupName = groupTag;
+
+        $("input#form-groupName").val("");
+        $("span#submit-groupName-form").hide();
+        $("span#choosen-groupName").html(groupName);
+    }
+});
+
+$("span#choosen-groupName").dblclick(function() {
+    groupName = "all";
+    $("span#choosen-groupName").html("");
+    $("span#submit-groupName-form").show();
 });
 
 function updatePlayersList() {

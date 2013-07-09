@@ -3,14 +3,14 @@ console.log("Initializing webdis plugin");
 
 function updateLocalPlayer() {
     updatePlayer(playerData.pName);
-    $.get(webdis_url + "/PUBLISH/" + webdis_channel + "/" +JSON.stringify(playerData));
+    $.get(webdis_url + "/PUBLISH/" + webdis_channel + "." + playerData.server + "." + groupName + "/" + JSON.stringify(playerData));
 }
 
 function registerUpdatePlayers() {
 
     var previous_response_length = 0
     xhr = new XMLHttpRequest()
-    xhr.open("GET", webdis_url + "/SUBSCRIBE/" + webdis_channel, true);
+    xhr.open("GET", webdis_url + "/SUBSCRIBE/" + webdis_channel + "." + playerData.server + "." + groupName, true);
     xhr.onreadystatechange = checkData;
     xhr.send(null);
 
