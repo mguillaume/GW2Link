@@ -613,7 +613,7 @@ function updatePlayersList() {
             return;
         } else {
             baseOpacity = 1;
-            if (playerData.server != playerData.server) {
+            if (playersData[playerName].server != playerData.server) {
                 baseOpacity = 0.5;
             }
             if (age > 10) {
