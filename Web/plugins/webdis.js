@@ -32,10 +32,8 @@ function registerUpdatePlayers() {
                 if (data.pName == playerData.pName) {
                     return;
                 }
-                if ((data.server == playerData.server) || (playerData.server == 0)) {
-                    playersData[data.pName] = data;
-                    updatePlayer(data.pName);
-                }
+                playersData[data.pName] = data;
+                updatePlayer(data.pName);
             } catch(e) {}
         }
     };
