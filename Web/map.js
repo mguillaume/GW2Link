@@ -611,10 +611,16 @@ function updatePlayersList() {
         if (age > 60) {
             removePlayer(playerName);
             return;
-        } else if (age > 10) {
-            playerMarkers[playerName].setOpacity((60-age)/60);
         } else {
-            playerMarkers[playerName].setOpacity(1);
+            baseOpacity = 1;
+            if (playerData.server != playerData.server) {
+                baseOpacity = 0.5;
+            }
+            if (age > 10) {
+                playerMarkers[playerName].setOpacity(((60-age)*baseOpacity)/60);
+            } else {
+                playerMarkers[playerName].setOpacity(baseOpacity);
+            }
         }
     }
 }
