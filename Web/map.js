@@ -20,6 +20,9 @@ var currentServer = 0;
 var gameToMapRatio = 39.37
 var mapOffset = new Array();
 
+var appVersion = "0.9";
+var appOutdated = false;
+
 var linkVersion = "1.1"
 var linkOutdated = false;
 var optionsOpen = true;
@@ -35,12 +38,17 @@ var optBroadcastGroup = "None";
 var optGW2LinkIP = "127.0.0.1";
 //var gw2LinkIP = "192.168.1.115";
 //var gw2LinkIP = "24.22.243.30";
+var bountyURL = "http://gw2.maximeloizeau.fr/";
+var bountyOpen = false;
+var bountyCreated = false;
+var bountyCheckTimer;
 
 var groupName = "all";
 
 var map = null;
 
 var bountiesPaths;
+var bossPaths = new Array();
 
 var playerIcon = L.Icon.extend({
     options: {
@@ -201,6 +209,8 @@ function initMap() {
             var direction = new L.polylineDecorator(path, {patterns: pattern});
             bountiesPaths.addLayer(path);
             bountiesPaths.addLayer(direction);
+
+            bossPaths[data.paths[i].boss] = path;
         }
     });
 }
@@ -221,6 +231,10 @@ function waitForMapData() {
 
 // Start checking for GW2Link every .25 seconds, once the page has finished loading
 $( document ).ready(function() {
+    chooseGroupName(self.document.location.hash.substring(1));
+
+    verifyAppOutDated();
+
     $.getScript("config.js", function() {
         $.getScript("plugins/" + plugin + ".js", function() {
             initServerNames();
@@ -235,6 +249,18 @@ $( document ).ready(function() {
     })
 });
 
+function verifyAppOutDated() {
+    $.getJSON(bountyURL + "bountyTracker.php?version&groupName=" + groupName).done(function(res) {
+        if(res.error == false) {
+            if(res.data.version != appVersion) {
+                $("#appOutdated").show();
+                $("#appOutdated").click(function() {
+                    $(this).hide();
+                });
+            }
+        }
+    });    
+}
 
 // Get an array of the player's x/y position
 function getPlayerPos(playerName) {
@@ -515,6 +541,20 @@ $("#options-link").click(function() {
     }
 });
 
+$("#bounty-link").click(function() {
+    if(bountyOpen) {
+        $("#bounty-interior").hide();
+        bountyOpen = false;
+    }
+    else {
+        if(!bountyCreated)
+            createBountyTracker();
+
+        $("#bounty-interior").show();
+        bountyOpen = true;
+    }
+});
+
 $('#checkbox-centermap').change(function() {
     optCenterMap = $('#checkbox-centermap').prop('checked');
 });
@@ -582,21 +622,31 @@ $("input#checkbox-showbounties").change(function() {
 });
 
 $("button#send-groupName").click(function() {
-    var groupTag = $("input#form-groupName").val();
-    if(groupTag != "") {
-        groupName = groupTag;
-
-        $("input#form-groupName").val("");
-        $("span#submit-groupName-form").hide();
-        $("span#choosen-groupName").html(groupName);
-    }
+    chooseGroupName($("input#form-groupName").val());
 });
 
 $("span#choosen-groupName").dblclick(function() {
-    groupName = "all";
-    $("span#choosen-groupName").html("");
-    $("span#submit-groupName-form").show();
+    chooseGroupName("");
 });
+
+function chooseGroupName(groupTag) {
+    if(groupTag != "") {
+        groupName = encodeURI(groupTag);
+
+        $("input#form-groupName").val("");
+        $("span#submit-groupName-form").hide();
+        $("span#choosen-groupName").html(groupTag);
+    }
+    else {
+        groupName = "all";
+        $("span#choosen-groupName").html("");
+        $("span#submit-groupName-form").show();
+    }
+
+    $("div#bounty-interior ul").empty();       
+    clearInterval(bountyCheckTimer);
+    checkExistingTracker(); 
+}
 
 function updatePlayersList() {
     var now = Date.now();
@@ -637,4 +687,100 @@ function addGuildBounties() {
 
 function removeGuildBounties() {
     map.removeLayer(bountiesPaths);
+}
+
+function populateBosses(trackerData) {
+    $.getJSON('bosses.json').done(function(data) {
+        for (var boss in data.boss_names.en) {
+            $("div#bounty-interior>ul").append("<li onclick='zoomOnPath($(this));' id=\"" + boss + "\" class=\"boss-not-found\">" + data.boss_names.en[boss] + "<img src=\"images/found.png\" alt=\"I found it !\" title=\"I found it !\" onclick='bossFound($(this));'/></li>");
+        }
+
+        if(trackerData != undefined)
+            updateFoundBosses(trackerData);
+    });    
+}
+
+function createBountyTracker() {
+    $.getJSON(bountyURL + "bountyTracker.php?create&groupName=" + groupName + "&author=" + playerData.pName).done(function(data) {
+        
+        if(data.error == false) {
+            populateBosses();
+
+            bountyCreated = true;
+            $("#bounty-link").html("hide/show bounty tracker");
+
+            bountyCheckTimer = setInterval(updateBountyTracker, 3000);
+        }
+    });
+}
+
+function checkExistingTracker() {
+    $.getJSON(bountyURL + "bountyTracker.php?getData&groupName=" + groupName).done(function(data) {
+        if(data.error == false) {
+            populateBosses(data.data);
+
+            bountyCreated = true;
+            $("#bounty-link").html("hide/show bounty tracker");
+
+            bountyCheckTimer = setInterval(updateBountyTracker, 3000);
+        }
+        else {
+            bountyCreated = false;
+            bountyOpen = false;
+            $("#bounty-link").html("Create bounty tracker for this group");
+        }
+    });
+}
+
+function updateFoundBosses(data) {
+    $("div#bounty-interior li").each(function(index) {
+        var name = $(this).attr('id');
+
+        if(data[name] == "0" && $(this).attr('class') == "boss-found")
+            bossLost($(this).children("img:first"));
+        else if(data[name] == "1" && $(this).attr('class') == "boss-not-found")
+            bossFound($(this).children("img:first"));
+    });
+}
+
+function updateBountyTracker() {
+    $.getJSON(bountyURL + "bountyTracker.php?getData&groupName=" + groupName).done(function(data) {
+        if(data.error == false) {
+            updateFoundBosses(data.data);
+        }
+    });
+}
+
+function bossFound(element) {
+    var bossName = element.parent().attr('id');
+
+    $.getJSON(bountyURL + "bountyTracker.php?update=found&groupName=" + groupName + "&boss=" + bossName).done(function(res) {
+        if(res.error == false) {
+            element.attr('src', 'images/not-found.png');
+            element.attr('onclick', 'bossLost($(this));');
+            element.attr('title', 'I lost it :(');
+            element.attr('alt', 'I lost it :(');
+            element.parent().attr('class', 'boss-found');
+        }
+    });
+}
+
+function bossLost(element) {
+    var bossName = element.parent().attr('id');
+
+    $.getJSON(bountyURL + "bountyTracker.php?update=lost&groupName=" + groupName + "&boss=" + bossName).done(function(res) {
+        if(res.error == false) {
+            element.attr('src', 'images/found.png');
+            element.attr('onclick', 'bossFound($(this));');
+            element.attr('title', 'I found it !');
+            element.attr('alt', 'I found it !');
+            element.parent().attr('class', 'boss-not-found');
+        }
+    });    
+}
+
+function zoomOnPath(element) {
+    var bossName = element.attr('id');
+
+    map.fitBounds(bossPaths[bossName]);
 }

@@ -17,13 +17,19 @@
 </head>
 <body>
     <div id="top-bar">
-        GW2 Realtime Map - <span id="top-download"><a href="GW2Link.html">Download GW2Link</a></span><span id="link-status"><span id="link-status-a">GW2Linker: </span><span id="link-status-b">Not Connected</span></span>
+        GW2 Realtime Map - <span id="top-download"><a href="GW2Link.zip">Download GW2Link</a></span><span id="link-status"><span id="link-status-a">GW2Linker: </span><span id="link-status-b">Not Connected</span></span>
+    </div>
+    <div id="appOutdated">
+        A newer version of the overlay has been released. Download it to enjoy more features.
+        <span class="dismiss">
+            click to dismiss
+        </span>
     </div>
     <div id="content-container">
         <div id="map-container"></div>
         <div id="right-bar">
             <div id="versionwarning">
-                You are using an outdated version of GW2Link. Please <a href="GW2Link.html">download</a> the newest version now.
+                You are using an outdated version of GW2Link. Please <a href="GW2Link.zip">download</a> the newest version now.
             </div>
             <div id="options-panel">
                 <a id="options-link" href="javascript:void(0)">Hide/show options</a>
@@ -47,8 +53,15 @@
                         <br \>
                         GW2Link IP: <input id="form-gw2linkip" type="text" value="127.0.0.1" \>
                         <br \>
-                        <label for="form-groupName">Group: </label><span id="submit-groupName-form"><input id="form-groupName" type="text" \><button id="send-groupName">Ok</button></span><span id="choosen-groupName"></span>
+                        <label for="form-groupName">Group: </label><span id="submit-groupName-form"><input id="form-groupName" type="text" \><button id="send-groupName">Ok</button></span><span id="choosen-groupName" title="Double click to leave this group"></span>
                     </form>
+                </div>
+            </div>
+
+            <div id="bounty-panel">
+                <a id="bounty-link" href="javascript:void(0)">Create bounty tracker for this group</a>
+                <div id="bounty-interior">
+                    <ul></ul>
                 </div>
             </div>
             <!--<div id="raw-panel">           

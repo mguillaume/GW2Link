@@ -20,7 +20,7 @@ function registerUpdatePlayers() {
     xhr = new XMLHttpRequest()
     xhr.open("GET", webdis_url + "/SUBSCRIBE/" + webdis_channel + "." + getGroup(), true);
     xhr.onreadystatechange = checkData;
-    xhr.send(null);
+    //xhr.send(null);
 
     function checkData() {
         if(xhr.readyState == 3)  {
