@@ -1,5 +1,6 @@
-
 console.log("Initializing webdis plugin");
+
+var xhr;
 
 function getGroup() {
     update_group = groupName;
@@ -15,12 +16,11 @@ function updateLocalPlayer() {
 }
 
 function registerUpdatePlayers() {
-
     var previous_response_length = 0
-    xhr = new XMLHttpRequest()
+    xhr = new XMLHttpRequest();
     xhr.open("GET", webdis_url + "/SUBSCRIBE/" + webdis_channel + "." + getGroup(), true);
     xhr.onreadystatechange = checkData;
-    //xhr.send(null);
+    xhr.send(null);
 
     function checkData() {
         if(xhr.readyState == 3)  {
@@ -40,3 +40,7 @@ function registerUpdatePlayers() {
 
 }
 
+function cancelRegistration() {
+    if(xhr != null)
+        xhr.abort();
+}

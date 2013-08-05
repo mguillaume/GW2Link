@@ -8,6 +8,7 @@ playerData.pos = new Array();
 playerData.pRot = 0;
 playerData.cRot = 0;
 playerData.lastSeen = Date.now();
+var previousServer = 0;
 var playersData = new Object();
 var playerMarkers = new Object();
 
@@ -20,7 +21,7 @@ var currentServer = 0;
 var gameToMapRatio = 39.37
 var mapOffset = new Array();
 
-var appVersion = "0.9";
+var appVersion = "0.92";
 var appOutdated = false;
 
 var linkVersion = "1.1"
@@ -231,8 +232,6 @@ function waitForMapData() {
 
 // Start checking for GW2Link every .25 seconds, once the page has finished loading
 $( document ).ready(function() {
-    chooseGroupName(self.document.location.hash.substring(1));
-
     verifyAppOutDated();
 
     $.getScript("config.js", function() {
@@ -242,11 +241,12 @@ $( document ).ready(function() {
             //waitForMapData();
             updateGW2Link();
             setInterval(updateGW2Link, update_interval);
-            registerUpdatePlayers();
             setInterval(checkOptions, 500);
             setInterval(updatePlayersList, 5000);
-        })
-    })
+        
+            chooseGroupName(self.document.location.hash.substring(1));
+        });
+    });
 });
 
 function verifyAppOutDated() {
@@ -311,6 +311,13 @@ function updatePlayer(playerName) {
     var playerMap = playersData[playerName].map;
     if(map == null || !mapData[playerMap])
         return;
+
+    if(groupName == "all" && playerName == playerData.pName) {
+        if(previousServer != playersData[playerName].server) {
+            chooseGroupName("");
+            previousServer = playersData[playerName].server;
+        }
+    }
 
     playerPos = getPlayerPos(playerName)
 
@@ -643,9 +650,17 @@ function chooseGroupName(groupTag) {
         $("span#submit-groupName-form").show();
     }
 
+    
+    $.getScript("config.js", function() {
+        $.getScript("plugins/" + plugin + ".js", function() {
+            cancelRegistration();
+            registerUpdatePlayers();
+        });
+    });
+
     $("div#bounty-interior ul").empty();       
     clearInterval(bountyCheckTimer);
-    checkExistingTracker(); 
+    checkExistingTracker();
 }
 
 function updatePlayersList() {
